@@ -1,0 +1,21 @@
+@import url(http://weloveiconfonts.com/api/?family=entypo|fontawesome);
+@import url(http://fonts.googleapis.com/css?family=Roboto+Condensed:400,300,700);
+/* entypo */
+	[class*="entypo-"]:before {
+	  font-family: 'entypo', sans-serif;
+	}
+	/* fontawesome */
+	[class*="fontawesome-"]:before {
+	  font-family: 'FontAwesome', sans-serif;
+	}
+        .ray{
+            background-color: #ffffff;
+            background:rgba(255,255,255,.5);
+            border-radius: 50%;
+            position: absolute;
+            -webkit-transition: all 2000ms ease;
+            -moz-transition: all 2000ms ease;
+            -ms-transition: all 2000ms ease;
+            -o-transition: all 2000ms ease;
+            transition: all 2000ms ease;
+        }

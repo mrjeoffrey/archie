@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Archie The Article Batcher</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description" content="Article image creation tool">
+        <meta name="author" content="Miroslav Maretic, Croatia, horemhab@gmail.com">
+        
+        <link rel="stylesheet" href="css/archie.css">
+        <link rel="stylesheet" href="css/fonts/RobotoCondensed-Light-webfont/stylesheet.css">
+        <link rel="stylesheet" href="css/fonts/RobotoCondensed-Bold-webfont/stylesheet.css">
+        <link rel="stylesheet" href="css/fonts/RobotoCondensed-Normal-webfont/stylesheet.css">
+        
+        <link rel="stylesheet" href="css/metro/metro-bootstrap.css">
+        <link rel="stylesheet" href="css/metro/metro-bootstrap-responsive.css">
+        <link rel="stylesheet" href="css/prettify/prettify.css">
+        <link rel="stylesheet" href="css/toastr.css">
+        <link rel="stylesheet" href="css/pace.css">
+        <link rel="stylesheet" href="css/slick.css"/>
+        <link rel="stylesheet" href="css/colpick.css"/>
+        <link rel="stylesheet" href="css/jquery.Jcrop.css"/>
+        
+        <script src="js/archie.n.js"></script>
+        
+        <script src='js/createjs-2013.12.12.min.js'></script>
+        <script src='js/jquery/jquery-2.1.1.min.js'></script>
+        <script src='js/jquery/jquery.mousewheel.js'></script>
+        <script src='js/jquery/jquery.widget.min.js'></script>
+        <script src='js/prettify/prettify.js'></script>
+        <script src='js/metro/metro.min.js'></script>
+        <script src='js/metro/metro-button-set.js'></script>
+        <script src='js/metro/metro-progressbar.js'></script>
+        <script src="js/toastr.js"></script>
+        <script src="js/pace.min.js"></script>
+        <script src="js/jszip.js"></script>
+        <script src="js/xlsx.js"></script>
+        <script src="js/slick.js"></script>
+        <script src="js/FileSaver.js"></script>
+        <script src="js/colpick.js"></script>
+        <script src="js/jquery.Jcrop.js"></script>
+        
+        <script>
+            Element.prototype.remove = function() {
+		this.parentElement.removeChild(this);
+            };
+            NodeList.prototype.remove = HTMLCollection.prototype.remove = function() {
+                    for(var i = 0, len = this.length; i < len; i++) {
+                            if(this[i] && this[i].parentElement) {
+                                    this[i].parentElement.removeChild(this[i]);
+                            }
+                    }
+            };
+            
+            var stage = null;
+            var jArchie = null;
+            function bodyLoaded(){
+                try{
+                    stage = new createjs.Stage(document.getElementById('cnvs_stage'));
+                    jArchie = new archieAPI();
+                    jArchie.getDay();
+                    toastr.success('Page loaded.');
+                }
+                catch(e){
+                    toastr.error('An error occured while loading the page. Check the log.');
+                    console.log('ERROR - An error occured while loading the page: '+e.toString());
+                }
+            };
+        </script>
+    </head>
+    <body class="metro" onload="bodyLoaded();">
+        <div id='raylight_container' style='position:absolute;left:0px;top:100px;height:1px;width:1px;z-index:0;'></div>
+        <div class="container">
+            <input type="file" id="hidden_upload" style="display:none;"/>
+            <nav class="navigation-bar white fixed-top" style='border:1px solid #eaeaea;'>
+                <nav class="navigation-bar-content">
+                    <div class="element">
+                        <a href="#" class="dropdown-toggle"><span class="entypo-cog"></span> Tools</a>
+                        <ul class="dropdown-menu" data-role="dropdown">
+                            <li><a href="#a_saveImage" onclick="jArchie.showContentBoxEditor();">Content box</a></li>
+                            <li><a href="#a_saveImage" onclick="jArchie.showImageQualityEditor();">Image quality</a></li>
+                            <li><a href="#a_saveImage" onclick="jArchie.showWindowTemplateEditor();">Window template</a></li>
+                            <li><a href="#a_saveImage" onclick="jArchie.showGradientEditor();">Gradient editor</a></li>
+                            <li><a href="#a_saveImage" onclick="$('#chkBox_corsProxy').toggleClass('entypo-check')"><span id="chkBox_corsProxy" class="entypo-cancel"> use corsproxy.com</span></a></li>
+                            <li><a href="archie-2015-01-12.zip">Download Archie 1.0</a></li>
+                        </ul>
+                    </div>
+                     <span class="element-divider"></span>
+                    <a href="PARSE_wh.xlsx" class="element"><span class="entypo-cc-share"></span> Template</a>
+                    <span class="element-divider"></span>
+                    <a href="#" class="element" id="a_uploadExcel"><span class="entypo-upload"></span> Workbook Upload</a>
+                    <span class="element-divider"></span>
+                    <a href="#" class="element" onclick="jArchie.downloadZip();"><span class="entypo-archive"></span> ZIP Download</a>
+                   
+                    <span class="element-divider"></span>
+<span class="element">close chrome & run this command in terminal before using Archie 1.0: <code>open -a Google\ Chrome --args --disable-web-security</code></span>
+
+                </nav>
+            </nav>
+
+            <div class="panel">
+                <div class="panel-content">
+                    <div class="grid">
+                        <div class="row" style="margin-top:50px;">
+                            <div class="span12">
+                                <span class="entypo-book"></span> Workbook <span style="color:#2f96b4;font-weight:bold;" id="workbookEntryCounter">0</span><span style="color:#2f96b4;font-weight:normal;"> entries uploaded</span>
+                                <div id='progressbar_workbook' class='progress-bar small' data-role='progress-bar'></div>
+                                <!--to dynamically load the entries-->
+                                <div class="tab-control" data-role="tab-control">
+                                    <ul class="tabs" id='entries_tabs'>
+
+                                    </ul>
+                                    <div class="frames" id='entries_frames'>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row" style="margin-top:0px;">
+                            <!--post settigns-->
+                            <div class="span8">
+                                <div class="panel" style="margin-top:20px;">
+                                    <div class="panel-header">
+                                        <h4>Post Settings</h4>
+                                    </div>
+                                    <div class="panel-content">
+                                        <!--Content-->
+                                        <div class="panel" data-role="panel">
+                                            <div class="panel-header">
+                                                Content
+                                            </div>
+                                            <div class="panel-content">
+                                                <div class="grid" style="margin-bottom:0px;">
+                                                    <div class="row" style="margin-top:0px;">
+                                                        <div class="span7">
+                                                            <label>Article Title</label>
+                                                            <div class="input-control textarea">
+                                                                <textarea id="textArea_content" cols="30" rows="2" style="width:500px;height:50px;resize:none;font-family:Roboto Condensed;font-size:16px;color:#0067cb;"></textarea>
+                                                                <div id="slider_fontSize" class="slider vertical place-right permanent-hint" data-marker-color='#999999'  data-complete-color="#2f96b4" data-show-hint="true"></div>
+                                                            </div>
+                                                        </div>
+                                                    </div> 
+                                                    <div class="row" style="margin-top:0px;">
+                                                        <div class="span7">
+                                                            <label>Article Source</label>
+                                                            <a id="a_articleSource" href="#">null</a>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row" style="margin-top:0px;">
+                                                        <div class="span7">
+                                                            <label>Favicon</label>
+                                                            <div class="input-control select">
+                                                                <select id="select_favicon" onchange='jArchie.selectFavicon();' style='width:300px;'>
+                                                                    <option value='null'>...</option>
+                                                                </select>
+                                                            </div>
+                                                            <button id="btn_refreshFaviconData" class="default" onclick="jArchie.refreshFavicons();">Refresh Favicons</button>
+                                                        </div>
+                                                    </div> 
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!--Image-->
+                                        <div class="panel" data-role="panel">
+                                            <div class="panel-header">
+                                                Image
+                                            </div>
+                                            <div class="panel-content">
+                                                <label>Image Source</label>
+                                                <a id="a_imageSource" href="#">null</a>
+
+                                                <label>Image Style</label>
+                                                    <button class="large" id="btn_setFullScreen" onclick="jArchie.setFullScreenImage();">Full Screen</button>
+                                                    <button class="large" onclick="jArchie.setWindowImage();">Window</button>
+                                                    <button class="large" style="margin-left:30px;" onclick="jArchie.showCropWindow();">Crop Image</button>
+                                                    </br>
+                                                    <button id="btn_uploadLocalImage" class="default">Upload Image</button>
+                                                    <div class="input-control checkbox" data-role="input-control">
+                                                        <label>
+                                                            <input id="chkbox_fullScreenDefault" type="checkbox" checked/>
+                                                            <span class="check"></span>
+                                                            Full screen default
+                                                        </label>
+                                                    </div>
+                                            </div>
+                                        </div>
+                                        <!--Settings-->
+                                        <div class="panel" data-role="panel">
+                                            <div class="panel-header">
+                                                Settings
+                                            </div>
+                                            <div class="panel-content">
+                                                <div class="grid">
+                                                    <div class="row">
+                                                        <div class="span3">
+                                                            <label>Type</label>
+                                                            <div class="input-control select">
+                                                                <select id="select_template" onchange="jArchie.selectType(this.value);">
+                                                                    <option value="article">Article</option>
+                                                                    <option value="flash">Flash deal</option>
+                                                                    <option value="coupon">Coupon</option>
+
+                                                                </select>
+                                                            </div>
+                                                            <label>Image Type</label>
+                                                            <div class="input-control select">
+                                                                <select id="select_imageType">
+                                                                    <option value="image/jpeg">JPEG</option>
+                                                                    <option value="image/png">PNG</option>
+                                                                    <option value="image/webp">WEBP</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="span3">
+                                                            <label>Day</label>
+                                                            <div class="input-control select">
+                                                                <select id="select_day" onchange="jArchie.selectDay();">
+                                                                    <option value="null">...</option>
+                                                                    <option value="#4ee3b5">Sunday</option>
+                                                                    <option value="#e1ed33">Monday</option>
+                                                                    <option value="#4fb5ed">Tuesday</option>
+                                                                    <option value="#ed1c24">Wednesday</option>
+                                                                    <option value="#79e673">Thursday</option>
+                                                                    <option value="#ed1c24">Friday</option>
+                                                                    <option value="#782a0e">Saturday</option>
+                                                                </select>
+                                                            </div> 
+                                                            <label>Gradient Type</label>
+                                                            <div class="input-control select">
+                                                                <select id="select_gradient" onchange="jArchie.selectGradient();">
+                                                                    <option value='null'>...</option>
+                                                                </select>
+                                                            </div>     
+                                                            <button id="a_saveImage" class='button default' onclick='jArchie.checkPreSave();'><span class="entypo-check"></span><span id='btn_saveText'> Save to ZIP</span></button>
+                                                        </div>
+                                                    </div>
+                                                </div> 
+                                            </div>
+                                        </div>                
+                                    </div>
+                                </div>
+                            </div>
+                            <!--stage-->
+                            <div class="span4">
+                                <div class="panel" style="margin-top:20px;width:385px;">
+                                    <div class="panel-content">
+                                        <canvas id='cnvs_stage' width='360' height='615' style="border:1px solid black;">
+                                            Canvas is not supported in this browser.
+                                        </canvas>
+                                        <br/>
+                                        <button id="btn_stageZoomInImage" onclick="jArchie.zoomIn('imagery');"><span class="entypo-plus"></span></button>
+                                        <button id="btn_stageZoomOutImage" onclick="jArchie.zoomOut('imagery');"><span class="entypo-minus"></span></button>
+                                        <button onclick="jArchie.centerHorizontally();"><span class="entypo-right-open"></span> Center horizontally <span class="entypo-left-open"></span></button>
+                                        <button onclick="jArchie.centerVertically();"><span class="entypo-up-open"></span> Center vertically <span class="entypo-down-open"></span></button>
+                                    </div>
+                                    <div class="panel-header">
+                                        <nav class="navigation-bar white">
+                                            <nav class="navigation-bar-content">
+                                                <a href="#a_saveImage" class="element" onclick="jArchie.displayPreviousImage();"><span class="entypo-left-open-big"></span> Previous image</a>
+                                                <div class="element"><h4 id="stage_currentEntryH"></h4></div>
+                                                <a href="#a_saveImage" class="element place-right" onclick="jArchie.displayNextImage();"><span id='span_firstImageTextHolder'><b>FIRST IMAGE</b></span><span class="entypo-right-open-big"></span></a>
+                                            </nav>
+                                        </nav>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>    
+        </div>
+    </body>
+</html>
